@@ -49,6 +49,32 @@ svg.i{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.6;stro
 .island.reminder-wiggle{animation:wig 1.05s ease-in-out 2}@keyframes wig{0%,100%{transform:translateX(-50%)}25%{transform:translateX(calc(-50% - 5px)) rotate(-2deg)}50%{transform:translateX(calc(-50% + 5px)) rotate(2deg)}75%{transform:translateX(-50%) scale(1.04)}}
 .toast{position:fixed;bottom:100px;left:50%;transform:translate(-50%,20px);background:#222226;border:1px solid var(--line);padding:12px 18px;border-radius:30px;opacity:0;transition:.25s;z-index:300;pointer-events:none;font-size:13px;white-space:nowrap}.toast.show{opacity:1;transform:translate(-50%,0)}
 .crop-modal{position:fixed;inset:0;z-index:250;background:#000c;backdrop-filter:blur(14px);display:grid;place-items:center;padding:18px}.crop-card{width:min(100%,390px);padding:20px;border-radius:30px;background:#141416;border:1px solid var(--line)}.crop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.crop-head b{display:block}.crop-head small{color:var(--mut);font-size:11px}.crop-stage{width:230px;height:230px;margin:0 auto 18px;border-radius:50%;overflow:hidden;position:relative;background:#000;border:2px solid var(--mint);touch-action:none}.crop-stage img{position:absolute;max-width:none;max-height:none;user-select:none;pointer-events:none;transform-origin:center}.crop-actions{display:flex;gap:10px;margin-top:18px}.crop-actions button{flex:1}.icon-btn{width:36px;height:36px;border-radius:50%;background:#222226;font-size:18px}
+
+/* Lucid-style animated tab passage */
+.navtabs{position:fixed;isolation:isolate;overflow:visible}
+.navtabs button{position:relative;z-index:2;background:transparent!important;transition:color .28s ease,transform .35s cubic-bezier(.2,.8,.2,1)}
+.navtabs button.active{background:transparent!important;color:var(--ink);transform:scale(1.04)}
+.navtabs .lucid-indicator{
+ position:absolute;z-index:1;left:7px;top:7px;width:58px;height:50px;border-radius:30px;
+ background:linear-gradient(135deg,rgba(213,242,122,.94),rgba(213,242,122,.68));
+ border:1px solid rgba(255,255,255,.48);
+ box-shadow:0 5px 22px rgba(180,220,100,.24),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 0 rgba(80,110,30,.12);
+ -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);
+ transform:translateX(calc(var(--tab-index,0)*64px));
+ transition:transform .58s cubic-bezier(.22,1,.36,1);
+ pointer-events:none;
+}
+.navtabs.is-moving .lucid-indicator{animation:lucidStretch .58s cubic-bezier(.22,1,.36,1)}
+@keyframes lucidStretch{
+ 0%{transform:translateX(calc(var(--tab-index,0)*64px)) scaleX(1)}
+ 36%{transform:translateX(calc(var(--tab-index,0)*64px)) scaleX(1.34)}
+ 68%{transform:translateX(calc(var(--tab-index,0)*64px)) scaleX(.9)}
+ 100%{transform:translateX(calc(var(--tab-index,0)*64px)) scaleX(1)}
+}
+.tab-page-enter{animation:lucidPageIn .34s cubic-bezier(.2,.75,.25,1) both}
+@keyframes lucidPageIn{from{opacity:0;transform:translateY(10px) scale(.992);filter:blur(3px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@media(prefers-reduced-motion:reduce){.navtabs .lucid-indicator,.navtabs button,.tab-page-enter{animation:none!important;transition:none!important}}
+
 </style></head><body>
 <div class="splash" id="splash"><div class="splash-inner"><img data-logo alt="DailyWork"><b>DailyWork</b><span>BY OLAVO</span></div></div>
 <section id="intro"><div class="stage"><div class="mock m1"><small>Hoje · Matemática</small><p>Lista de exercícios 4</p><div class="bar"><span>Em andamento</span><em>70%</em></div></div><div class="mock m2"><small>Amanhã · Biologia</small><p>Resumo do capítulo 7</p><div class="bar"><span>Em andamento</span><em>30%</em></div></div></div><h1>Gerencie sua rotina melhor.</h1><p>Veja o que vence hoje e amanhã, receba lembretes e acompanhe tudo na barrinha do celular.</p><button class="ring" onclick="introNext()" aria-label="Continuar"><i>→</i></button></section>
@@ -78,7 +104,7 @@ svg.i{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.6;stro
 <div class="sh" id="secBar"><h2>Aparência da barrinha</h2></div><div class="card g"><div class="settings-row"><div class="setting-copy"><b>Claro · Liquid Glass</b><small>Efeito de vidro transparente somente na barrinha.</small></div><input class="switch" type="checkbox" id="glassToggle"></div><div class="control"><div class="control-head"><label for="intensity">Intensidade do vidro</label><b id="intensityValue">65%</b></div><input id="intensity" type="range" min="10" max="95" value="65"></div><div class="control"><div class="control-head"><label for="effect">Efeito</label></div><select id="effect"><option value="soft">Glass suave</option><option value="frost">Frosted glass</option><option value="crystal">Crystal glow</option><option value="clear">Transparência limpa</option></select></div></div>
 <div class="sh" id="secRem"><h2>Notificações e lembretes</h2></div><div class="card g"><div class="settings-row"><div class="setting-copy"><b>Ativar notificações</b><small>Autoriza os avisos do DailyWork neste dispositivo.</small></div><input class="switch" type="checkbox" id="notifyToggle"></div><div class="reminder-manager"><div class="control-head"><label>Gerenciador de lembretes</label><span id="reminderCount">0 lembretes</span></div><div id="reminderList" class="reminder-list"></div><div class="reminder-add"><input id="newReminderName" maxlength="24" placeholder="Nome do lembrete"><input id="newReminderTime" type="time" value="18:00" aria-label="Horário"><button type="button" id="addReminder">Adicionar</button></div></div><div class="settings-row"><div class="setting-copy"><b>Som</b><small>Reproduzir um aviso sonoro.</small></div><input class="switch" type="checkbox" id="soundToggle" checked></div><div class="settings-row"><div class="setting-copy"><b>Vibração</b><small>Vibrar quando o lembrete tocar, se o aparelho permitir.</small></div><input class="switch" type="checkbox" id="vibrateToggle" checked></div><button class="primary" id="testReminder" style="margin-top:10px">Testar lembrete</button><div class="status" id="notificationStatus">O lembrete com som e vibração funciona enquanto o app estiver aberto.</div></div>
 </section>
-<nav class="navtabs g"><button class="active" data-tab="overview" aria-label="Início"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/></svg></button><button data-tab="calendar" aria-label="Calendário"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></button><button data-tab="settings" aria-label="Configurações"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button></nav>
+<nav class="navtabs g"><span class="lucid-indicator" aria-hidden="true"></span><button class="active" data-tab="overview" aria-label="Início"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/></svg></button><button data-tab="calendar" aria-label="Calendário"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></button><button data-tab="settings" aria-label="Configurações"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button></nav>
 </main></div>
 <div class="crop-modal hidden" id="cropModal" role="dialog" aria-modal="true"><div class="crop-card"><div class="crop-head"><div><b>Ajustar foto</b><small>Arraste para posicionar e use o zoom.</small></div><button class="icon-btn" id="closeCrop" type="button" aria-label="Fechar">×</button></div><div class="crop-stage" id="cropStage"><img id="cropImage" alt=""></div><div class="control"><div class="control-head"><label for="photoZoom">Zoom</label><b id="zoomValue">100%</b></div><input id="photoZoom" type="range" min="100" max="250" value="100"></div><div class="crop-actions"><button class="secondary" id="cancelCrop" type="button">Cancelar</button><button class="primary" id="applyCrop" type="button">Usar esta foto</button></div></div></div>
 <div class="toast" id="toast"></div>
@@ -96,7 +122,15 @@ try{DailyWorkNative.updateConfig(JSON.stringify(data));}catch(e){console.error(e
 }
 function syncNativeReminders(){if(!window.DailyWorkNative)return;const active=settings.notify?reminders.filter(r=>r.enabled):[];if(DailyWorkNative.scheduleReminders)DailyWorkNative.scheduleReminders(JSON.stringify(active),!!settings.vibrate,!!settings.sound);}
 function persist(){localStorage.setItem('dw_profile',JSON.stringify(profile));localStorage.setItem('dw_student_settings',JSON.stringify(settings));}
-function setTab(t){['overview','calendar','settings'].forEach(x=>$('#'+x).classList.toggle('hidden',x!==t));document.querySelectorAll('.navtabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));window.scrollTo(0,0);if(t==='calendar')renderCalendar()}
+function setTab(t){
+ const tabs=['overview','calendar','settings'],nav=document.querySelector('.navtabs'),target=$('#'+t);
+ tabs.forEach(x=>{const page=$('#'+x);page.classList.toggle('hidden',x!==t);page.classList.remove('tab-page-enter')});
+ document.querySelectorAll('.navtabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+ const index=Math.max(0,tabs.indexOf(t));nav.style.setProperty('--tab-index',index);
+ nav.classList.remove('is-moving');void nav.offsetWidth;nav.classList.add('is-moving');
+ if(target){void target.offsetWidth;target.classList.add('tab-page-enter')}
+ window.scrollTo(0,0);if(t==='calendar')renderCalendar();
+}
 document.querySelectorAll('.navtabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 $('#signInTab').onclick=()=>{mode='signin';$('#signInTab').classList.add('active');$('#signUpTab').classList.remove('active');$('#authTitle').textContent='Bem-vindo de volta.';$('#submitAuth').textContent='Entrar　→'};
 $('#signUpTab').onclick=()=>{mode='signup';$('#signUpTab').classList.add('active');$('#signInTab').classList.remove('active');$('#authTitle').textContent='Crie sua conta.';$('#submitAuth').textContent='Criar conta　→'};
