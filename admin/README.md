@@ -1,6 +1,6 @@
 # DailyWork — configuração inicial do painel
 
-O painel estático fica nesta pasta e usa o Supabase do projeto DailyWork.
+O painel estático fica nesta pasta e usa o Supabase do projeto DailyWork.\n\nURL pública: https://dailywork-w4cw.onrender.com
 
 ## Primeiro administrador
 1. Crie uma conta de usuário no Supabase em Authentication → Users → Add user.
@@ -23,7 +23,7 @@ Crie um Static Site conectado ao repositório `nexxtyx7/DailyWork`, branch `main
 O deploy automático pode ficar ativado.
 
 ## Recuperação de senha
-Depois que o site estiver publicado, adicione a URL completa `https://SEU-SITE.onrender.com/redefinir.html` em Supabase → Authentication → URL Configuration → Redirect URLs.
+No Supabase → Authentication → URL Configuration:\n- Site URL: `https://dailywork-w4cw.onrender.com`\n- Redirect URLs: `https://dailywork-w4cw.onrender.com/redefinir.html`\n\nO app chama `resetPasswordForEmail` com essa URL. A página de redefinição atualiza a senha pela própria autenticação Supabase.
 O app deve chamar `resetPasswordForEmail(email, { redirectTo: 'https://SEU-SITE.onrender.com/redefinir.html' })`.
 
 ## Métricas
