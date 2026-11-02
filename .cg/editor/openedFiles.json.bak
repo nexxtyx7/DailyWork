@@ -1,0 +1,21 @@
+{
+  "allFiles": [
+    {
+      "file": "/storage/emulated/0/CodeOnTheGoProjects/Daily Work/app/src/main/java/com/example/dailywork/MainActivity.java",
+      "selection": {
+        "end": {
+          "column": 0,
+          "index": 0,
+          "line": 0
+        },
+        "start": {
+          "column": 0,
+          "index": 0,
+          "line": 0
+        }
+      }
+    }
+  ],
+  "projectPath": "/storage/emulated/0/CodeOnTheGoProjects/Daily Work",
+  "selectedFile": "/storage/emulated/0/CodeOnTheGoProjects/Daily Work/app/src/main/java/com/example/dailywork/MainActivity.java"
+}

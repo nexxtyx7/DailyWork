@@ -1,0 +1,74 @@
+private void configurarMovimentacao() {
+    bar.setOnTouchListener((v, event) -> {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                moveMode = false;
+                moved = false;
+                downRawX = event.getRawX();
+                downRawY = event.getRawY();
+                startX = params.x;
+                startY = params.y;
+
+                longPressRunnable = () -> {
+                    moveMode = true;
+                    bar.setBackground(rounded(Color.rgb(20, 45, 70), 25));
+                };
+
+                dragHandler.postDelayed(longPressRunnable, 3000);
+                return true;
+
+            case MotionEvent.ACTION_MOVE:
+                float dx = event.getRawX() - downRawX;
+                float dy = event.getRawY() - downRawY;
+
+                int limit = ViewConfiguration.get(this).getScaledTouchSlop();
+
+                if (!moveMode && (Math.abs(dx) > limit || Math.abs(dy) > limit)) {
+                    dragHandler.removeCallbacks(longPressRunnable);
+                    moved = true;
+                    return true;
+                }
+
+                if (moveMode) {
+                    moved = true;
+                    params.gravity = Gravity.TOP | Gravity.LEFT;
+
+                    int maxX = getResources().getDisplayMetrics().widthPixels - params.width;
+                    int maxY = getResources().getDisplayMetrics().heightPixels - params.height;
+
+                    params.x = Math.max(0, Math.min(maxX, startX + (int) dx));
+                    params.y = Math.max(0, Math.min(maxY, startY + (int) dy));
+
+                    try {
+                        wm.updateViewLayout(bar, params);
+                    } catch (Exception ignored) {}
+                }
+                return true;
+
+            case MotionEvent.ACTION_UP:
+                dragHandler.removeCallbacks(longPressRunnable);
+
+                if (moveMode) {
+                    getSharedPreferences("DailyWorkPosition", MODE_PRIVATE)
+                        .edit()
+                        .putInt("x", params.x)
+                        .putInt("y", params.y)
+                        .putBoolean("saved", true)
+                        .apply();
+
+                    aplicarAparencia();
+                } else if (!moved) {
+                    alternar();
+                }
+
+                moveMode = false;
+                return true;
+
+            case MotionEvent.ACTION_CANCEL:
+                dragHandler.removeCallbacks(longPressRunnable);
+                moveMode = false;
+                return true;
+        }
+        return true;
+    });
+}

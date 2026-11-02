@@ -1,0 +1,88 @@
+package com.example.dailywork;
+
+import android.content.*;
+import android.app.*;
+import android.os.*;
+import org.json.*;
+import java.util.*;
+
+public class ReminderReceiver extends BroadcastReceiver {
+
+    static void sync(Context c, String json) {
+        try {
+            JSONArray old = new JSONArray(c.getSharedPreferences("dw_alarm",0).getString("items","[]"));
+            AlarmManager am = (AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
+
+            for(int i=0;i<old.length();i++)
+                cancel(c,am,old.getJSONObject(i).optString("id"));
+
+            JSONArray arr = new JSONArray(json);
+            c.getSharedPreferences("dw_alarm",0).edit().putString("items",json).apply();
+
+            for(int i=0;i<arr.length();i++) {
+                JSONObject r=arr.getJSONObject(i);
+                if(r.optBoolean("enabled",true))
+                    schedule(c,am,r.optString("id"),r.optString("name"),r.optString("time"));
+            }
+        } catch(Exception e) { e.printStackTrace(); }
+    }
+
+    private static PendingIntent pending(Context c,String id,String name) {
+        Intent i=new Intent(c,ReminderReceiver.class);
+        i.putExtra("id",id);
+        i.putExtra("name",name);
+        return PendingIntent.getBroadcast(c,id.hashCode(),i,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private static void cancel(Context c,AlarmManager am,String id) {
+        PendingIntent p=pending(c,id,"");
+        am.cancel(p);
+        p.cancel();
+    }
+
+    private static void schedule(Context c,AlarmManager am,String id,String name,String time) {
+        try {
+            String[] t=time.split(":");
+            Calendar cal=Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY,Integer.parseInt(t[0]));
+            cal.set(Calendar.MINUTE,Integer.parseInt(t[1]));
+            cal.set(Calendar.SECOND,0);
+            cal.set(Calendar.MILLISECOND,0);
+            if(!cal.after(Calendar.getInstance())) cal.add(Calendar.DAY_OF_YEAR,1);
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,cal.getTimeInMillis(),pending(c,id,name));
+        } catch(Exception e) { e.printStackTrace(); }
+    }
+
+    @Override public void onReceive(Context c,Intent i) {
+        String id=i.getStringExtra("id"), name=i.getStringExtra("name");
+        NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
+        if(Build.VERSION.SDK_INT>=26) {
+            NotificationChannel ch=new NotificationChannel("dw_reminders","Lembretes DailyWork",NotificationManager.IMPORTANCE_HIGH);
+            ch.enableVibration(true);
+            ch.setVibrationPattern(new long[]{0,220,80,220,80,320});
+            nm.createNotificationChannel(ch);
+        }
+        Notification.Builder b=Build.VERSION.SDK_INT>=26
+            ? new Notification.Builder(c,"dw_reminders")
+            : new Notification.Builder(c);
+        b.setSmallIcon(R.mipmap.ic_launcher)
+         .setContentTitle("DailyWork · "+name)
+         .setContentText("Está na hora de conferir seus deveres.")
+         .setAutoCancel(true);
+        nm.notify(id.hashCode(),b.build());
+
+        JSONArray arr;
+        try {
+            arr=new JSONArray(c.getSharedPreferences("dw_alarm",0).getString("items","[]"));
+            for(int x=0;x<arr.length();x++) {
+                JSONObject r=arr.getJSONObject(x);
+                if(r.optString("id").equals(id) && r.optBoolean("enabled",true)) {
+                    AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);
+                    schedule(c,am,id,name,r.optString("time"));
+                    break;
+                }
+            }
+        } catch(Exception e) { e.printStackTrace(); }
+    }
+}

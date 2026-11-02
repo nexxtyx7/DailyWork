@@ -1,0 +1,14 @@
+function renderOverview(){
+const duties=JSON.parse(localStorage.getItem('dw_duties')||'[]');
+const tomorrow=new Date();
+tomorrow.setDate(tomorrow.getDate()+1);
+const key=tomorrow.getFullYear()+'-'+String(tomorrow.getMonth()+1).padStart(2,'0')+'-'+String(tomorrow.getDate()).padStart(2,'0');
+const items=duties.filter(d=>d.date===key);
+const dateLabel=tomorrow.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+const dateElement=$('#tomorrowDate');
+if(dateElement)dateElement.textContent=dateLabel;
+const active=reminders.filter(r=>r.enabled).sort((a,b)=>a.time.localeCompare(b.time));
+$('#nextReminder').textContent=settings.notify&&active.length?active[0].time:'Desativado';
+$('#islandTasks').innerHTML='<div style="margin-bottom:5px;color:#9eafd0;font-weight:600">'+esc(dateLabel)+'</div>'+(items.length?items.slice(0,5).map(d=>'<div>• '+esc(d.title)+' <span style="color:#9eafd0">· '+esc(d.subject||'')+'</span></div>').join(''):'<div>Nada programado para amanhã.</div>');
+$('#overviewStatus').textContent='Agenda de amanhã atualizada automaticamente.';
+}
