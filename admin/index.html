@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DailyWork • Administração</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#080d18;--panel:#111a2b;--line:#25334b;--muted:#8da0bd;--blue:#69a9ff;--white:#eef4ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#142642 0,#080d18 55%);font:15px Inter,system-ui,sans-serif;color:var(--white);min-height:100vh}
+main{width:min(1100px,calc(100% - 32px));margin:42px auto}.brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#74b8ff,#456bff);display:grid;place-items:center;color:#061326;font-weight:900;font-size:21px}.brand h1{font-size:20px;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.panel,.stat,.formbox,.duty{background:#111a2bdc;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 14px 35px #0003}
+.login{max-width:420px;margin:8vh auto}.login h2{margin-top:0}.muted{color:var(--muted)}label{display:block;color:#b9c8df;font-size:12px;margin:14px 0 7px}input,textarea{width:100%;background:#0a1220;color:var(--white);border:1px solid #2a3a55;border-radius:11px;padding:12px;font:inherit;outline:none}input:focus,textarea:focus{border-color:var(--blue)}button{border:0;border-radius:11px;padding:12px 16px;background:linear-gradient(135deg,#75baff,#5884ff);color:#061326;font-weight:750;cursor:pointer}button.secondary{background:#1c2a40;color:#d9e7ff;border:1px solid #31435f}button.danger{background:#3a1d2b;color:#ffc4d1;border:1px solid #633044}.wide{width:100%;margin-top:18px}.hidden{display:none!important}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px}.top h2{margin:0;font-size:23px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}.stat small{color:var(--muted)}.stat b{display:block;font-size:30px;margin-top:8px}.grid{display:grid;grid-template-columns:340px 1fr;gap:16px}.formbox h3{margin:0 0 8px}.dutylist{display:grid;gap:10px;margin-top:12px}.duty{padding:15px;display:flex;align-items:center;justify-content:space-between;gap:12px}.duty h4{margin:0 0 5px}.duty p{margin:0;color:var(--muted);font-size:13px}.actions{display:flex;gap:8px}.actions button{padding:8px 11px}.status{margin-top:12px;color:var(--muted);font-size:13px;min-height:18px}
+@media(max-width:760px){main{margin:24px auto}.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.top{align-items:flex-start}.duty{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions button{flex:1}}
+</style></head>
+<body><main>
+<header class="brand"><div class="logo">D</div><div><h1>DailyWork</h1><p>Painel de administração</p></div></header>
+<section id="login" class="panel login"><h2>Acesso administrativo</h2><p class="muted">Entre com a conta autorizada como administradora.</p>
+<form id="loginForm"><label>E-mail</label><input id="email" type="email" autocomplete="username" required><label>Senha</label><input id="password" type="password" autocomplete="current-password" required><button class="wide">Entrar no painel</button></form><div class="status" id="loginStatus"></div></section>
+<section id="dashboard" class="hidden">
+<div class="top"><div><h2>Visão geral</h2><div class="muted" id="welcome"></div></div><button class="secondary" id="logout">Sair</button></div>
+<div class="stats"><div class="stat"><small>Contas criadas</small><b id="usersCount">—</b></div><div class="stat"><small>Instalações registradas</small><b id="installsCount">—</b></div><div class="stat"><small>Deveres publicados</small><b id="dutiesCount">—</b></div></div>
+<div class="grid"><section class="formbox"><h3 id="formTitle">Adicionar dever</h3><p class="muted">O dever aparecerá para os alunos no aplicativo.</p>
+<form id="dutyForm"><input id="dutyId" type="hidden"><label>Matéria</label><input id="subject" maxlength="50" placeholder="Ex.: Matemática" required><label>Título do dever</label><input id="title" maxlength="120" placeholder="Ex.: Exercícios da página 42" required><label>Data de entrega</label><input id="dueDate" type="date" required><label>Descrição (opcional)</label><textarea id="description" rows="3" maxlength="500" placeholder="Detalhes para os alunos"></textarea><button class="wide" id="saveDuty">Publicar dever</button><button class="wide secondary hidden" type="button" id="cancelEdit">Cancelar edição</button></form><div class="status" id="formStatus"></div></section>
+<section class="panel"><div class="top"><h3>Deveres cadastrados</h3><button class="secondary" id="refresh">Atualizar</button></div><div id="duties" class="dutylist"><p class="muted">Carregando…</p></div></section></div>
+</section></main>
+<script>
+const SUPABASE_URL='https://pwqiyoriewuxisliuwfb.supabase.co';
+const SUPABASE_KEY='sb_publishable_bOZaiChvH4h35WtB2XueBQ_VLDq7zNx';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+let editing=[];
+function message(id,msg){$(id).textContent=msg}
+async function start(){
+ const {data:{session}}=await sb.auth.getSession();
+ if(session) await showDashboard();
+}
+async function showDashboard(){
+ const {data:{user}}=await sb.auth.getUser();
+ if(!user){$('login').classList.remove('hidden');$('dashboard').classList.add('hidden');return}
+ const {data:profile,error}=await sb.from('profiles').select('full_name,role').eq('id',user.id).maybeSingle();
+ if(error||!profile||profile.role!=='admin'){await sb.auth.signOut();$('login').classList.remove('hidden');$('dashboard').classList.add('hidden');message('loginStatus','Esta conta não tem permissão de administrador.');return}
+ $('login').classList.add('hidden');$('dashboard').classList.remove('hidden');$('welcome').textContent='Olá, '+(profile.full_name||user.email);
+ await Promise.all([loadStats(),loadDuties()]);
+}
+async function loadStats(){
+ const [u,i,d]=await Promise.all([
+ sb.from('profiles').select('id',{count:'exact',head:true}),
+ sb.from('app_installs').select('install_id',{count:'exact',head:true}),
+ sb.from('duties').select('id',{count:'exact',head:true})
+ ]);
+ $('usersCount').textContent=u.count??'—';$('installsCount').textContent=i.count??'—';$('dutiesCount').textContent=d.count??'—';
+}
+async function loadDuties(){
+ const {data,error}=await sb.from('duties').select('*').order('due_date',{ascending:true});
+ if(error){$('duties').textContent='Erro ao carregar deveres: '+error.message;return}
+ editing=data||[];$('duties').innerHTML=editing.length?editing.map(d=>'<article class="duty"><div><h4>'+esc(d.subject)+' — '+esc(d.title)+'</h4><p>'+dateBR(d.due_date)+(d.description?' · '+esc(d.description):'')+'</p></div><div class="actions"><button class="secondary" data-edit="'+d.id+'">Editar</button><button class="danger" data-delete="'+d.id+'">Excluir</button></div></article>').join(''):'<p class="muted">Nenhum dever cadastrado.</p>';
+ $('duties').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editDuty(b.dataset.edit));
+ $('duties').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteDuty(b.dataset.delete));
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function dateBR(v){return new Date(v+'T12:00:00').toLocaleDateString('pt-BR')}
+function resetForm(){$('dutyForm').reset();$('dutyId').value='';$('formTitle').textContent='Adicionar dever';$('saveDuty').textContent='Publicar dever';$('cancelEdit').classList.add('hidden')}
+function editDuty(id){const d=editing.find(x=>x.id===id);if(!d)return;$('dutyId').value=d.id;$('subject').value=d.subject;$('title').value=d.title;$('dueDate').value=d.due_date;$('description').value=d.description||'';$('formTitle').textContent='Editar dever';$('saveDuty').textContent='Salvar alterações';$('cancelEdit').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'})}
+async function deleteDuty(id){if(!confirm('Excluir este dever?'))return;const {error}=await sb.from('duties').delete().eq('id',id);if(error){message('formStatus',error.message);return}await loadDuties();await loadStats()}
+$('loginForm').onsubmit=async e=>{e.preventDefault();message('loginStatus','Entrando…');const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){message('loginStatus',error.message);return}message('loginStatus','');await showDashboard()};
+$('logout').onclick=async()=>{await sb.auth.signOut();$('dashboard').classList.add('hidden');$('login').classList.remove('hidden')};
+$('dutyForm').onsubmit=async e=>{e.preventDefault();const id=$('dutyId').value;const row={subject:$('subject').value.trim(),title:$('title').value.trim(),due_date:$('dueDate').value,description:$('description').value.trim()||null,published:true,updated_at:new Date().toISOString()};const result=id?await sb.from('duties').update(row).eq('id',id):await sb.from('duties').insert(row);if(result.error){message('formStatus',result.error.message);return}message('formStatus',id?'Dever atualizado!':'Dever publicado!');resetForm();await Promise.all([loadDuties(),loadStats()])};
+$('cancelEdit').onclick=resetForm;$('refresh').onclick=()=>Promise.all([loadStats(),loadDuties()]);
+sb.auth.onAuthStateChange((_event,session)=>{if(!session){$('dashboard').classList.add('hidden');$('login').classList.remove('hidden')}});
+start();
+</script></body></html>
