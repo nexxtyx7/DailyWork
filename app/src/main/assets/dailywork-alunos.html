@@ -64,12 +64,17 @@ svg.i{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.6;stro
  transition:transform .58s cubic-bezier(.22,1,.36,1);
  pointer-events:none;
 }
-.navtabs.is-moving .lucid-indicator{animation:lucidStretch .58s cubic-bezier(.22,1,.36,1)}
+.navtabs .lucid-indicator::after{
+ content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+ background:linear-gradient(90deg,rgba(255,255,255,.28),transparent 45%,rgba(255,255,255,.18));
+ opacity:0;
+}
+.navtabs.is-moving .lucid-indicator::after{animation:lucidStretch .58s cubic-bezier(.22,1,.36,1)}
 @keyframes lucidStretch{
- 0%{transform:translateX(calc(var(--tab-index,0)*64px)) scaleX(1)}
- 36%{transform:translateX(calc(var(--tab-index,0)*64px)) scaleX(1.34)}
- 68%{transform:translateX(calc(var(--tab-index,0)*64px)) scaleX(.9)}
- 100%{transform:translateX(calc(var(--tab-index,0)*64px)) scaleX(1)}
+ 0%{transform:scaleX(1);opacity:0}
+ 30%{transform:scaleX(1.28);opacity:1}
+ 68%{transform:scaleX(.92);opacity:.75}
+ 100%{transform:scaleX(1);opacity:0}
 }
 .tab-page-enter{animation:lucidPageIn .34s cubic-bezier(.2,.75,.25,1) both}
 @keyframes lucidPageIn{from{opacity:0;transform:translateY(10px) scale(.992);filter:blur(3px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
