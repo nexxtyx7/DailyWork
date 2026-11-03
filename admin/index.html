@@ -173,3 +173,65 @@ $('cancelEdit').onclick=resetForm;$('refresh').onclick=()=>Promise.all([loadStat
 sb.auth.onAuthStateChange((_event,session)=>{if(!session){$('dashboard').classList.add('hidden');$('login').classList.remove('hidden')}});
 start();
 </script></body></html>
+/* GLASS 80% + NUMEROS LEGIVEIS */
+
+.brand,
+.panel,
+.stat,
+.formbox,
+.duty {
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,.16),
+    rgba(255,255,255,.07) 55%,
+    rgba(12,16,10,.12)
+  ) !important;
+  border: 1px solid rgba(255,255,255,.30) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(180%) !important;
+  backdrop-filter: blur(34px) saturate(180%) !important;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.30),
+    inset 0 1px 0 rgba(255,255,255,.30),
+    inset 0 -1px 0 rgba(255,255,255,.08) !important;
+}
+
+.stat b {
+  background: none !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  font-size: 38px;
+  font-weight: 850;
+  letter-spacing: -1px;
+  text-shadow: 0 2px 12px rgba(0,0,0,.35);
+}
+
+.stat small {
+  color: #f2f5e9 !important;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.muted,
+label,
+.status {
+  color: #e2e8d8 !important;
+}
+
+.stat:before,
+.panel:before,
+.formbox:before,
+.duty:before {
+  background: linear-gradient(
+    125deg,
+    rgba(255,255,255,.20),
+    transparent 45%,
+    rgba(213,242,122,.07)
+  ) !important;
+}
+
+@media(max-width:800px) {
+  .stat b {
+    font-size: 32px;
+  }
+}
+
