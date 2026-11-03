@@ -1,9 +1,160 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DailyWork • Nova senha</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script><style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080d18;color:#eef4ff;font:15px system-ui}.box{width:min(420px,calc(100% - 32px));padding:26px;border:1px solid #25334b;border-radius:20px;background:#111a2b}h1{font-size:22px}p{color:#9aabc5}label{display:block;margin:16px 0 7px}input{width:100%;padding:13px;border-radius:10px;background:#0a1220;border:1px solid #2a3a55;color:white}button{width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:#70adff;color:#061326;font-weight:800}.msg{margin-top:12px;color:#a9c7f0}
-</style></head><body><main class="box"><h1>Crie uma nova senha</h1><p>Escolha uma senha nova para acessar o DailyWork.</p><form id="form"><label>Nova senha</label><input id="pw" type="password" minlength="6" required><label>Confirmar senha</label><input id="pw2" type="password" minlength="6" required><button>Salvar nova senha</button></form><div class="msg" id="msg"></div></main><script>
-const sb=window.supabase.createClient('https://pwqiyoriewuxisliuwfb.supabase.co','sb_publishable_bOZaiChvH4h35WtB2XueBQ_VLDq7zNx');
-const msg=document.getElementById('msg');
-sb.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY')msg.textContent='Link validado. Defina sua nova senha.'});
-document.getElementById('form').onsubmit=async e=>{e.preventDefault();const a=document.getElementById('pw').value,b=document.getElementById('pw2').value;if(a!==b){msg.textContent='As senhas não coincidem.';return}const {error}=await sb.auth.updateUser({password:a});if(error){msg.textContent=error.message;return}msg.textContent='Senha atualizada. Você já pode voltar ao aplicativo.';await sb.auth.signOut()};
-</script></body></html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DailyWork • Nova senha</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080d18;color:#eef4ff;font:15px system-ui}
+.box{width:min(420px,calc(100% - 32px));padding:26px;border:1px solid #25334b;border-radius:20px;background:#111a2b}
+h1{font-size:22px}
+p{color:#9aabc5}
+label{display:block;margin:16px 0 7px}
+input{width:100%;padding:13px;border-radius:10px;background:#0a1220;border:1px solid #2a3a55;color:white}
+button{width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:#70adff;color:#061326;font-weight:800}
+button:disabled{opacity:.5}
+.msg{margin-top:12px;color:#a9c7f0}
+</style>
+</head>
+<body>
+<main class="box">
+<h1>Crie uma nova senha</h1>
+<p>Escolha uma senha nova para acessar o DailyWork.</p>
+
+<form id="form" hidden>
+<label>Nova senha</label>
+<input id="pw" type="password" minlength="6" required>
+<label>Confirmar senha</label>
+<input id="pw2" type="password" minlength="6" required>
+<button id="save">Salvar nova senha</button>
+</form>
+
+<div class="msg" id="msg">Validando link de recuperação...</div>
+</main>
+
+<script>
+const sb = window.supabase.createClient(
+  'https://pwqiyoriewuxisliuwfb.supabase.co',
+  'sb_publishable_bOZaiChvH4h35WtB2XueBQ_VLDq7zNx',
+  {
+    auth: {
+      flowType: 'pkce',
+      detectSessionInUrl: false,
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  }
+);
+
+const msg = document.getElementById('msg');
+const form = document.getElementById('form');
+const save = document.getElementById('save');
+
+let recoveryValid = false;
+
+function showError(error) {
+  console.error(error);
+  msg.textContent = 'Link inválido ou expirado. Solicite uma nova recuperação de senha.';
+}
+
+async function validateRecovery() {
+  try {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
+
+    if (params.has('error')) {
+      throw new Error(params.get('error_description') || params.get('error'));
+    }
+
+    let result = null;
+
+    // Link PKCE: ?code=...
+    const code = params.get('code');
+    if (code) {
+      result = await sb.auth.exchangeCodeForSession(code);
+      if (result.error) throw result.error;
+    }
+
+    // Link com token_hash
+    else if (params.has('token_hash')) {
+      result = await sb.auth.verifyOtp({
+        token_hash: params.get('token_hash'),
+        type: 'recovery'
+      });
+      if (result.error) throw result.error;
+    }
+
+    // Link com tokens no fragmento da URL
+    else if (hash.has('access_token') && hash.has('refresh_token')) {
+      if (hash.get('type') !== 'recovery') {
+        throw new Error('O link não é de recuperação.');
+      }
+
+      result = await sb.auth.setSession({
+        access_token: hash.get('access_token'),
+        refresh_token: hash.get('refresh_token')
+      });
+      if (result.error) throw result.error;
+    }
+
+    else {
+      throw new Error('Nenhum token de recuperação encontrado.');
+    }
+
+    const { data, error } = await sb.auth.getSession();
+    if (error) throw error;
+    if (!data.session) throw new Error('Sessão de recuperação não encontrada.');
+
+    recoveryValid = true;
+    history.replaceState({}, document.title, url.pathname);
+    form.hidden = false;
+    msg.textContent = 'Link validado! Agora escolha sua nova senha.';
+  } catch (error) {
+    showError(error);
+  }
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (!recoveryValid) {
+    msg.textContent = 'Valide o link de recuperação antes de continuar.';
+    return;
+  }
+
+  const a = document.getElementById('pw').value;
+  const b = document.getElementById('pw2').value;
+
+  if (a.length < 6) {
+    msg.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+    return;
+  }
+
+  if (a !== b) {
+    msg.textContent = 'As senhas não coincidem.';
+    return;
+  }
+
+  save.disabled = true;
+  msg.textContent = 'Atualizando senha...';
+
+  const { error } = await sb.auth.updateUser({ password: a });
+
+  if (error) {
+    msg.textContent = error.message;
+    save.disabled = false;
+    return;
+  }
+
+  msg.textContent = 'Senha atualizada com sucesso! Você já pode entrar no DailyWork.';
+  form.hidden = true;
+  await sb.auth.signOut();
+});
+
+validateRecovery();
+</script>
+</body>
+</html>
